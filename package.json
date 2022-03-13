@@ -1,0 +1,55 @@
+{
+  "name": "homebridge-tami4",
+  "description": "Homebridge plugin for Tami4",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/nitaybz/homebridge-tami4.git"
+  },
+  "license": "GNU",
+  "preferGlobal": true,
+  "keywords": [
+    "homebridge-plugin",
+    "homebridge-tami4",
+    "tami4",
+    "smart-water"
+  ],
+  "bugs": {
+    "url": "https://github.com/nitaybz/homebridge-tami4/issues"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "homebridge": ">=1.4.0"
+  },
+  "dependencies": {
+    "@homebridge/plugin-ui-utils": "0.0.19",
+    "axios": "^0.26.1",
+    "inquirer": "^8.2.1",
+    "node-persist": "^3.1.0",
+    "puppeteer": "^13.5.1"
+  },
+  "devDependencies": {
+    "eslint": "^7.1.0"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "bin": {
+    "tami4-extract": "./bin/cli.js"
+  },
+  "funding": [
+    {
+      "type": "paypal",
+      "url": "https://paypal.me/nitaybz"
+    },
+    {
+      "type": "patreon",
+      "url": "https://www.patreon.com/nitaybz"
+    },
+    {
+      "type": "kofi",
+      "url": "https://ko-fi.com/nitaybz"
+    }
+  ]
+}

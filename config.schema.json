@@ -1,0 +1,70 @@
+{
+    "pluginAlias": "Tami4",
+    "pluginType": "platform",
+    "singular": true,
+    "customUi": true,
+    "headerDisplay": "Homebridge Plugin for Tami4 Edge Device (Water Purifier)",
+    "footerDisplay": "Created by @nitaybz",
+    "schema": {
+        "type": "object",
+        "properties": {
+            "refreshToken": {
+                "title": "Token",
+                "description": "This value can be obtain via terminal command: `tami4-extract`",
+                "type": "string",
+                "required": true
+            },
+            "lighting": {
+                "title": "Enable Lighting Switch",
+                "type": "boolean",
+                "default": false,
+                "required": false
+            },
+            "pushAndDrink": {
+                "title": "Enable \"Push And Drink\" Switch",
+                "type": "boolean",
+                "default": false,
+                "required": false
+            },
+            "nightMode": {
+                "title": "Enable \"Night Mode\" Switch",
+                "type": "boolean",
+                "default": false,
+                "required": false
+            },
+            "energySaveMode": {
+                "title": "Enable \"Energy Saving\" Switch",
+                "type": "boolean",
+                "default": false,
+                "required": false
+            },
+            "smartHeatingMode": {
+                "title": "Enable \"Smart Heating Mode\" Switch",
+                "type": "boolean",
+                "default": false,
+                "required": false
+            },
+            "buttonsSound": {
+                "title": "Enable \"Buttons Sound\" Switch",
+                "type": "boolean",
+                "default": false,
+                "required": false
+            },
+			"statePollingInterval": {
+				"title": "Device Polling Interval in Seconds",
+				"description": "Time in seconds between each status polling of the Tami4 devices",
+				"default": 300,
+				"type": "integer",
+				"minimum": 60,
+				"maximum": 600
+			},
+            "debug": {
+                "title": "Enable Debug Logs",
+                "description": "When checked, the plugin will produce extra logs for debugging purposes",
+                "type": "boolean",
+                "default": false,
+                "required": false
+            }
+        }
+    }
+  }
