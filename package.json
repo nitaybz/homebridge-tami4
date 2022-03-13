@@ -1,12 +1,12 @@
 {
   "name": "homebridge-tami4",
   "description": "Homebridge plugin for Tami4",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "git://github.com/nitaybz/homebridge-tami4.git"
   },
-  "license": "GNU",
+  "license": "GPL-3.0-or-later",
   "preferGlobal": true,
   "keywords": [
     "homebridge-plugin",
@@ -36,7 +36,7 @@
     "lint:fix": "eslint . --fix"
   },
   "bin": {
-    "tami4-extract": "./bin/cli.js"
+    "tami4-extract": "bin/cli.js"
   },
   "funding": [
     {
@@ -51,5 +51,8 @@
       "type": "kofi",
       "url": "https://ko-fi.com/nitaybz"
     }
-  ]
+  ],
+  "homepage": "https://github.com/nitaybz/homebridge-tami4#readme",
+  "main": "index.js",
+  "author": "nitaybz"
 }

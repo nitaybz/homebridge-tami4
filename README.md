@@ -77,6 +77,10 @@ if you want to even speed up the process, you can add `"debug": true` to your co
 
 -------------------------------------------
 
+
+## Credits
+
+Much of the credit belongs to @leo212 for his first implementation and integration with the Tami4 Edge devices in his [Smarthings plugin](https://github.com/leo212/tami4edge-smarthings-unofficial)
 ## Support homebridge-tami4
 
 **homebridge-tami4** is a free plugin under the GNU license. it was developed as a contribution to the homebridge/hoobs community with lots of love and thoughts.
