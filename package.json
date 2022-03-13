@@ -1,6 +1,6 @@
 {
   "name": "homebridge-tami4",
-  "description": "Homebridge plugin for Tami4",
+  "description": "Homebridge Plugin for Tami4 Edge+ Device (Water Purifier)",
   "version": "1.0.0",
   "repository": {
     "type": "git",
