@@ -296,8 +296,6 @@ const axiosRequest = (config) => {
 		axios(config)
 			.then(function (response) {
 				const res = response
-				console.log('error response example:')
-				console.log(res.error)
 				if (res.error) {
 					log(res.error)
 					reject(res.error)
