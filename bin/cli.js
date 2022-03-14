@@ -2,7 +2,7 @@
 /* eslint-disable no-async-promise-executor */
 
 const axios = require('axios')
-const inquirer = require('inquirer')
+const prompts = require('prompts');
 const puppeteer = require('puppeteer');
 const isPi = require('detect-rpi');
 const exec = require('child-process-promise').exec;
@@ -14,7 +14,7 @@ console.log('\nYou\'ll need the phone that was registered to Tami4 to get OTP pa
 
 var questions = [
 	{
-		type: 'input',
+		type: 'text',
 		name: 'phone',
 		message: 'Please insert the phone number registered to Tami4 (e.g. +972524001234):',
 		validate: function (phone) {
@@ -53,7 +53,7 @@ var questions = [
 		}
 	},
 	{
-		type: 'input',
+		type: 'number',
 		name: 'code',
 		message: 'Please enter the OTP code received at your phone:',
 		validate: function (code, answers) {
@@ -97,7 +97,7 @@ var questions = [
 	}
 ]
 
-inquirer.prompt(questions).then(() => {
+prompts(questions).then(() => {
 	console.log('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
 	console.log('')
 	console.log('Your token is ->')

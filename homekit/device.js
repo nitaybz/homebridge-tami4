@@ -14,8 +14,8 @@ class Tami4 {
 		this.smartHeatingMode = platform.config.smartHeatingMode
 		this.buttonsSound = platform.config.buttonsSound
 		this.statePollingInterval = platform.config.statePollingInterval ? platform.config.statePollingInterval * 1000 : 300000
-		this.name = device.name
-		this.displayName = device.name
+		this.name = device.name || 'Tami4'
+		this.displayName = this.name
 		this.id = device.id
 		this.log = platform.log
 		this.api = platform.api
