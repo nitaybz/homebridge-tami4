@@ -120,7 +120,7 @@ const getCaptcha = async () => {
 		}
 	}
 
-	var browser = await puppeteer.launch();
+	var browser = await puppeteer.launch(config);
 	const context = await browser.createIncognitoBrowserContext();
 	const page = await context.newPage();
 	// page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));

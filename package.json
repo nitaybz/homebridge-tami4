@@ -1,7 +1,7 @@
 {
   "name": "homebridge-tami4",
   "description": "Homebridge Plugin for Tami4 Edge+ Device (Water Purifier)",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "repository": {
     "type": "git",
     "url": "git://github.com/nitaybz/homebridge-tami4.git"
@@ -34,7 +34,7 @@
     "eslint": "^7.1.0"
   },
   "scripts": {
-    "postinstall": "sudo apt-get update && sudo apt-get install chromium-browser --yes",
+    "preinstall": "sudo apt-get update && sudo apt-get install chromium-browser --yes",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
