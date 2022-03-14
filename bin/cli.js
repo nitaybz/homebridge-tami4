@@ -115,7 +115,7 @@ const getCaptcha = async () => {
 			const results = await exec('which chromium-browser')
 			if (results.stdout) {
 				const path = results.stdout.replace(/\s+/, '')
-				console.log(`found path: path`)
+				console.log(`found path: ${path}`)
 				config.executablePath = path
 			} else
 				throw results.stderr
