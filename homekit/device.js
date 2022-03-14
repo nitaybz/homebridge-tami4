@@ -1,6 +1,6 @@
 let Characteristic, Service
 
-class Thermostat {
+class Tami4 {
 	constructor(device, platform) {
 
 		Service = platform.api.hap.Service
@@ -15,6 +15,7 @@ class Thermostat {
 		this.buttonsSound = platform.config.buttonsSound
 		this.statePollingInterval = platform.config.statePollingInterval ? platform.config.statePollingInterval * 1000 : 300000
 		this.name = device.name
+		this.displayName = device.name
 		this.id = device.id
 		this.log = platform.log
 		this.api = platform.api
@@ -136,4 +137,4 @@ class Thermostat {
 }
 
 
-module.exports = Thermostat
+module.exports = Tami4
