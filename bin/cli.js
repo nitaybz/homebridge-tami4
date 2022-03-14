@@ -4,8 +4,9 @@
 const axios = require('axios')
 const inquirer = require('inquirer')
 const puppeteer = require('puppeteer');
-var isPi = require('detect-rpi');
-var which = require('which');
+const isPi = require('detect-rpi');
+const exec = require('child-process-promise').exec;
+
 let token
 const endpointUrl = 'https://swelcustomers.strauss-water.com'
 
@@ -111,9 +112,14 @@ const getCaptcha = async () => {
 	if (isPi()) {
 		console.log('Running on a RPi, searching for Chromium path...')
 		try {
-			const path = await which('chromium-browser')
-			console.log(`found path: ${path} `)
-			config.executablePath = path
+			const results = await exec('which chromium-browser')
+			if (results.stdout) {
+				const path = results.stdout.replace(/\s+/, '')
+				console.log(`found path: path`)
+				config.executablePath = path
+			} else
+				throw results.stderr
+				
 		} catch (err) {
 			console.log('Chromium not found')
 			console.log(err)
