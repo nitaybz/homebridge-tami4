@@ -18,7 +18,7 @@ const installChromium = () => {
 }
 
 const preInstallScript = async () => {
-	if (!isPi()) {
+	if (isPi()) {
 		console.log('Running on a RPi, searching for Chromium path...')
 		try {
 			const results = await exec('which chromium-browser')
