@@ -3,7 +3,7 @@
 
 const axios = require('axios')
 const prompts = require('prompts');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const isPi = require('detect-rpi');
 const exec = require('child-process-promise').exec;
 
@@ -107,25 +107,9 @@ prompts(questions).then(() => {
 })
 
 const getCaptcha = async () => {
-	let config = {}
+	let config = {executablePath: await getBrowserPath()}
 
-	if (isPi()) {
-		console.log('Running on a RPi, searching for Chromium path...')
-		try {
-			const results = await exec('which chromium-browser')
-			if (results.stdout) {
-				const path = results.stdout.replace(/\s+/, '')
-				console.log(`found path: ${path}`)
-				config.executablePath = path
-			} else
-				throw results.stderr
-				
-		} catch (err) {
-			console.log('Chromium not found')
-			console.log(err)
-		}
-	}
-
+        
 	var browser = await puppeteer.launch(config);
 	const context = await browser.createIncognitoBrowserContext();
 	const page = await context.newPage();
@@ -139,4 +123,87 @@ const getCaptcha = async () => {
 	})
 	await browser.close();
 	return tami4token
+}
+
+const getBrowserPath = async() => {
+	console.log('\nThis script is using the browser to bypass captcha, it will now search for an installed browser')
+
+
+	if (isPi()) {
+		console.log('Running on a RPi, searching for Chromium path...')
+		try {
+			const results = await exec('which chromium-browser')
+			if (results.stdout) {
+				const path = results.stdout.replace(/^\s+|\s+$/g, '')
+				console.log(`found path: ${path}`)
+				return path
+			} else
+				throw results.stderr
+				
+		} catch (err) {
+			console.log('Chromium not found')
+			throw new Error('Could not find Chromium installation! Stopping the process')
+		}
+	} else if (process.platform === 'darwin') {
+		console.log('Running on a Mac, searching for Google Chrome path...')
+		try {
+			const results = await exec("which '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'")
+			if (results.stdout) {
+				const path = results.stdout.replace(/^\s+|\s+$/g, '')
+				console.log(`found path: ${path}`)
+				return path
+			} else
+				throw 'err'
+				
+		} catch (err) {
+			console.log('Chrome not found at \'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\'')
+		}
+		try {
+			const results = await exec("which '/Applications/Google Chrome.app/'")
+			if (results.stdout) {
+				const path = results.stdout.replace(/^\s+|\s+$/g, '')
+				console.log(`found path: ${path}`)
+				return path
+			} else
+				throw 'err'
+				
+		} catch (err) {
+			console.log('Chrome not found at \'/Applications/Google Chrome.app\'')
+			throw new Error('Could not find Chrome installation! Stopping the process')
+		}
+		
+	} else if (process.platform === 'win32') {
+		console.log('Running on a Windows, searching for Microsoft Edge path... (experimental)')
+		try {
+			const results = await exec("which 'C:\\Program Files (x86)\\Microsoft\\Edge Dev\\Application\\msedge.exe'")
+			if (results.stdout) {
+				const path = results.stdout.replace(/^\s+|\s+$/g, '')
+				console.log(`found path: ${path}`)
+				return path
+			} else
+				throw 'err'
+				
+		} catch (err) {
+			console.log('Microsoft Edge not found at \'C:\\Program Files (x86)\\Microsoft\\Edge Dev\\Application\\msedge.exe\'')
+			console.log(err)
+			throw new Error('Could not find Microsoft Edge installation! Stopping the process')
+		}
+		
+	} else {
+		console.log('Running on unknown device, searching for Chromium path...')
+		try {
+			const results = await exec('which chromium-browser')
+			if (results.stdout) {
+				const path = results.stdout.replace(/^\s+|\s+$/g, '')
+				console.log(`found path: ${path}`)
+				return path
+			} else
+				throw results.stderr
+				
+		} catch (err) {
+			console.log('Chromium not found')
+			console.log(err)
+			throw new Error('Could not find Chromium installation! Stopping the process')
+		}
+	}
 }
