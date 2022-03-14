@@ -2,6 +2,8 @@
 const axios = require('axios')
 const puppeteer = require('puppeteer');
 const { HomebridgePluginUiServer, RequestError } = require('@homebridge/plugin-ui-utils');
+var isPi = require('detect-rpi');
+var which = require('which');
 
 class UiServer extends HomebridgePluginUiServer {
 	constructor() {
@@ -103,8 +105,21 @@ class UiServer extends HomebridgePluginUiServer {
 	}
 
 	async getCaptcha() {
+		let config = {}
+	
+		if (isPi()) {
+			console.log('Running on a RPi, searching for Chromium path...')
+			try {
+				const path = await which('chromium-browser')
+				console.log(`found path: ${path} `)
+				config.executablePath = path
+			} catch (err) {
+				console.log('Chromium not found')
+				console.log(err)
+			}
+		}
 
-		var browser = await puppeteer.launch();
+		var browser = await puppeteer.launch(config);
 		const context = await browser.createIncognitoBrowserContext();
 		const page = await context.newPage();
 		// page.on('console', (msg) => console.log('PAGE LOG:', msg.text()));

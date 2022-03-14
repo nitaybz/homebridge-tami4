@@ -24,14 +24,17 @@
   "dependencies": {
     "@homebridge/plugin-ui-utils": "0.0.19",
     "axios": "^0.26.1",
+    "detect-rpi": "^1.4.0",
     "inquirer": "^8.2.1",
     "node-persist": "^3.1.0",
-    "puppeteer": "^13.5.1"
+    "puppeteer": "^13.5.1",
+    "which": "^2.0.2"
   },
   "devDependencies": {
     "eslint": "^7.1.0"
   },
   "scripts": {
+    "postinstall": "sudo apt-get update && sudo apt-get install chromium-browser --yes",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
