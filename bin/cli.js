@@ -173,22 +173,8 @@ const getBrowserPath = async() => {
 		}
 		
 	} else if (process.platform === 'win32') {
-		console.log('Running on a Windows, searching for Microsoft Edge path... (experimental)')
-		try {
-			const results = await exec("which 'C:\\Program Files (x86)\\Microsoft\\Edge Dev\\Application\\msedge.exe'")
-			if (results.stdout) {
-				const path = results.stdout.replace(/^\s+|\s+$/g, '')
-				console.log(`found path: ${path}`)
-				return path
-			} else
-				throw 'err'
-				
-		} catch (err) {
-			console.log('Microsoft Edge not found at \'C:\\Program Files (x86)\\Microsoft\\Edge Dev\\Application\\msedge.exe\'')
-			console.log(err)
-			throw new Error('Could not find Microsoft Edge installation! Stopping the process')
-		}
-		
+		console.log('Running on a Windows, Using Microsoft Edge path)')
+		return 'C:\\Program Files (x86)\\Microsoft\\Edge Dev\\Application\\msedge.exe'
 	} else {
 		console.log('Running on unknown device, searching for Chromium path...')
 		try {
