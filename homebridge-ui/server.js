@@ -4,6 +4,7 @@ const puppeteer = require('puppeteer-core');
 const { HomebridgePluginUiServer, RequestError } = require('@homebridge/plugin-ui-utils');
 const isPi = require('detect-rpi');
 const exec = require('child-process-promise').exec;
+const edgePaths = require("edge-paths");
 
 class UiServer extends HomebridgePluginUiServer {
 	constructor() {
@@ -171,7 +172,8 @@ class UiServer extends HomebridgePluginUiServer {
 		
 		} else if (process.platform === 'win32') {
 			console.log('Running on a Windows, Using Microsoft Edge path)')
-			return 'C:\\Program Files (x86)\\Microsoft\\Edge Dev\\Application\\msedge.exe'
+
+			return edgePaths.getEdgePath();
 		} else {
 			console.log('Running on unknown device, searching for Chromium path...')
 			try {

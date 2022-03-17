@@ -1,7 +1,7 @@
 {
   "name": "homebridge-tami4",
   "description": "Homebridge Plugin for Tami4 Edge+ Device (Water Purifier)",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "repository": {
     "type": "git",
     "url": "git://github.com/nitaybz/homebridge-tami4.git"
@@ -26,6 +26,7 @@
     "axios": "^0.26.1",
     "child-process-promise": "^2.2.1",
     "detect-rpi": "^1.4.0",
+    "edge-paths": "^2.2.1",
     "node-persist": "^3.1.0",
     "prompts": "^2.4.2",
     "puppeteer-core": "^13.5.1"
