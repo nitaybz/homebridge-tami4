@@ -69,7 +69,21 @@ All Features in HomeKit are identical (in the name of the switch as well) to the
 Check the internet connection and that you can control the device from Tami4 Edge app.
 If that doesn't help, turn on debug logs in the plugin settings and look for errors.
 
+### Chromium Installation on hommebridge Ubuntu image
+
+As Chromium requires snapd to run and the last is not working well in a dockerized environment, here is a workaround:
+```
+mkdir /homebridge/chrome
+cd /homebridge/chrome
+wget https://commondatastorage.googleapis.com/chromium-browser-snapshots/Linux_x64/1043527/chrome-linux.zip
+apt update
+apt install unzip -y
+unzip chrome-linux.zip
+ln -s /homebridge/chrome/chrome-linux/chrome /usr/bin/chromium-browser
+```
+
 #### others
+
 
 If you experience any issues with the plugins please refer to the [Issues](https://github.com/nitaybz/homebridge-tami4/issues) tab and check if your issue is already described there, if it doesn't, please create a new issue with as much detailed information as you can give (logs are crucial).<br>
 
