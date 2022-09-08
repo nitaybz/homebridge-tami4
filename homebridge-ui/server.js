@@ -106,7 +106,7 @@ class UiServer extends HomebridgePluginUiServer {
 	}
 
 	async getCaptcha() {
-		let config = {executablePath: await this.getBrowserPath()}
+		let config = {executablePath: await this.getBrowserPath(), args: ['--no-sandbox', '--disable-setuid-sandbox']}
 
 		var browser = await puppeteer.launch(config);
 		const context = await browser.createIncognitoBrowserContext();
