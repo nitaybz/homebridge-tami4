@@ -1,5 +1,7 @@
 <style>
-  .hidden {display: none;}
+  .hidden {
+    display: none;
+  }
 </style>
 
 <div>
@@ -19,7 +21,8 @@
       <div class="form-group">
         <label for="phoneNumberInput">Phone Number</label>
         <input type="text" class="form-control" id="phoneNumberInput" aria-describedby="phoneNumberHelp" required>
-        <small id="phoneNumberHelp" class="form-text text-muted">Please insert the phone number registered to Tami4 Edge app (e.g.+972524001234).</small>
+        <small id="phoneNumberHelp" class="form-text text-muted">Please insert the phone number registered to Tami4 Edge
+          app (e.g.+972524001234).</small>
       </div>
       <div class="text-center">
         <a id="skip" class="btn btn-elegant">Skip</a>
@@ -42,7 +45,8 @@
 
 
 </div>
-
+<script type="text/javascript"
+  src="https://www.google.com/recaptcha/api.js?render=6Lf-jYgUAAAAAEQiRRXezC9dfIQoxofIhqBnGisq"></script>
 <script>
   let pluginConfig
 
@@ -51,7 +55,7 @@
     pluginConfig = await homebridge.getPluginConfig();
 
     if (!pluginConfig.length || !pluginConfig[0].refreshToken) {
-      pluginConfig.push({platform: 'Tami4'});
+      pluginConfig.push({ platform: 'Tami4' });
       await homebridge.updatePluginConfig(pluginConfig);
       document.getElementById('setupRequired').style.display = 'block';
     } else {
@@ -67,26 +71,26 @@
 
   // skip
   document.getElementById('skip').addEventListener('click', async () => {
-      document.getElementById('step2').style.display = 'none';
-      document.getElementById('setupRequired').style.display = 'none';
-      document.getElementById('setupComplete').style.display = 'block';
-      homebridge.showSchemaForm();
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('setupRequired').style.display = 'none';
+    document.getElementById('setupComplete').style.display = 'block';
+    homebridge.showSchemaForm();
   });
 
 
   // skip2
   document.getElementById('skip2').addEventListener('click', async () => {
-      document.getElementById('step2').style.display = 'none';
-      document.getElementById('setupRequired').style.display = 'none';
-      document.getElementById('setupComplete').style.display = 'block';
-      homebridge.showSchemaForm();
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('setupRequired').style.display = 'none';
+    document.getElementById('setupComplete').style.display = 'block';
+    homebridge.showSchemaForm();
   });
 
   // startOver
   document.getElementById('startOver').addEventListener('click', async () => {
-      document.getElementById('setupRequired').style.display = 'block';
-      document.getElementById('step2').style.display = 'none';
-      document.getElementById('setupComplete').style.display = 'none';
+    document.getElementById('setupRequired').style.display = 'block';
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('setupComplete').style.display = 'none';
   });
 
   // step 1 submit handler
@@ -102,16 +106,25 @@
 
     try {
       homebridge.showSpinner()
-      await homebridge.request('/request-otp', { phone: phoneValue });
-      homebridge.hideSpinner()
-      document.getElementById('step1').style.display = 'none';
-      document.getElementById('step2').style.display = 'block';
+      grecaptcha.ready(() => {
+        grecaptcha
+          .execute('6Lf-jYgUAAAAAEQiRRXezC9dfIQoxofIhqBnGisq', {
+            action: 'login'
+          })
+          .then(async (token) => {
+            await homebridge.request('/request-otp', { phone: phoneValue, token });
+            homebridge.hideSpinner()
+            document.getElementById('step1').style.display = 'none';
+            document.getElementById('step2').style.display = 'block';
+            document.getElementById('step1Submit').removeAttribute('disabled');
+          });
+      });
     } catch (e) {
       homebridge.hideSpinner()
       homebridge.toast.error(e.message, 'Error');
+      document.getElementById('step1Submit').removeAttribute('disabled');
     }
 
-    document.getElementById('step1Submit').removeAttribute('disabled');
   });
 
   // step 2 submit handler
@@ -128,28 +141,37 @@
 
     try {
       homebridge.showSpinner()
-      const response = await homebridge.request('/check-otp', { phone: phoneValue, code: otpValue });
+      grecaptcha.ready(() => {
+        grecaptcha
+          .execute('6Lf-jYgUAAAAAEQiRRXezC9dfIQoxofIhqBnGisq', {
+            action: 'login'
+          })
+          .then(async (token) => {
+            const response = await homebridge.request('/check-otp', { phone: phoneValue, code: otpValue, token });
 
-      if (!response.refreshToken)
-        throw new Error('No Refresh Token', response)
+            if (!response.refreshToken)
+              throw new Error('No Refresh Token', response)
 
-      // update the config
-      pluginConfig[0].refreshToken = response.refreshToken;
-      // update the config
-      await homebridge.updatePluginConfig(pluginConfig);
-      homebridge.showSchemaForm();
+            // update the config
+            pluginConfig[0].refreshToken = response.refreshToken;
+            // update the config
+            await homebridge.updatePluginConfig(pluginConfig);
+            homebridge.showSchemaForm();
 
-      document.getElementById('step2').style.display = 'none';
-      document.getElementById('setupRequired').style.display = 'none';
-      document.getElementById('setupComplete').style.display = 'block';
-      homebridge.hideSpinner()
+            document.getElementById('step2').style.display = 'none';
+            document.getElementById('setupRequired').style.display = 'none';
+            document.getElementById('setupComplete').style.display = 'block';
+            homebridge.hideSpinner()
+            document.getElementById('step2Submit').removeAttribute('disabled');
+          });
+      });
 
     } catch (e) {
       homebridge.hideSpinner()
       homebridge.toast.error(e.error || e.message, 'Error');
+      document.getElementById('step2Submit').removeAttribute('disabled');
     }
 
-    document.getElementById('step2Submit').removeAttribute('disabled');
   });
 
 </script>

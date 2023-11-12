@@ -22,11 +22,11 @@ check with: `node -v` & `homebridge -V` and update if needed
 
 This plugin  can be easily installed and configured through Homebridge/Hoobs UI.
 
-**To use this plugin you must provide initial ** `refreshToken` ** which can be obtain in 2 different ways:
+**To use this plugin you must provide initial ** `refreshToken` ** which can be obtain ~~in 2 different ways~~ only through homebridge UI:
 
-1. Using the latest Homebridge config UI version (>=v4.32.0), you can obtain `refreshToken` easily through the plugin settings and fill all the needed configuration.
+1. Using Homebridge config UI version, you can obtain `refreshToken` easily through the plugin settings and fill all the needed configuration.
 
-2. After installing the plugin, open the terminal and run the command: `tami4-extract`. follow the instructions to get the token & imei.
+~~2. After installing the plugin, open the terminal and run the command: `tami4-extract`. follow the instructions to get the token & imei.~~
 
 \* All methods require to have your phone (the one that was signed in to Tami4 Edge app)
 
@@ -34,7 +34,7 @@ This plugin  can be easily installed and configured through Homebridge/Hoobs UI.
 
 1. Install homebridge using: `sudo npm install -g homebridge --unsafe-perm`
 2. Install this plugin using: `sudo npm install -g homebridge-tami4`
-3. Run the command `tami4-extract` in terminal and follow instructions to extract token and imei.
+3. ~~Run the command `tami4-extract` in terminal and follow instructions to extract token and imei.~~
 4. Update your configuration file. See `config-sample.json` in this repository for a sample.
 
 \* install from git: `sudo npm install -g git+https://github.com/nitaybz/homebridge-tami4.git`

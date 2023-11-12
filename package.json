@@ -24,23 +24,14 @@
   "dependencies": {
     "@homebridge/plugin-ui-utils": "0.0.19",
     "axios": "^0.26.1",
-    "child-process-promise": "^2.2.1",
-    "detect-rpi": "^1.4.0",
-    "edge-paths": "^2.2.1",
-    "node-persist": "^3.1.0",
-    "prompts": "^2.4.2",
-    "puppeteer-core": "^13.5.1"
+    "node-persist": "^3.1.0"
   },
   "devDependencies": {
     "eslint": "^7.1.0"
   },
   "scripts": {
-    "preinstall": "node bin/preinstall.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
-  },
-  "bin": {
-    "tami4-extract": "bin/cli.js"
   },
   "funding": [
     {
