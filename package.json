@@ -18,8 +18,8 @@
     "url": "https://github.com/nitaybz/homebridge-tami4/issues"
   },
   "engines": {
-    "node": ">=14.0.0",
-    "homebridge": ">=1.4.0"
+    "node": ">=16.0.0",
+    "homebridge": ">=1.5.0"
   },
   "dependencies": {
     "@homebridge/plugin-ui-utils": "^1.0.0",
