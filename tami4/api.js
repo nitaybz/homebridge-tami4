@@ -11,6 +11,7 @@ module.exports = async function (platform) {
 	token = await storage.getItem('tami4-token')
 
 	const getToken = () => {
+		log.easyDebug(`getToken; ${token} ${token && token.expirationDate} [currentDate = ${new Date().getTime()}`)
 		if (token && new Date().getTime() < token.expirationDate) {
 			log.easyDebug('Found valid token in cache', token.accessToken)
 			return Promise.resolve(token.accessToken)
@@ -20,25 +21,26 @@ module.exports = async function (platform) {
 			tokenPromise = new Promise((resolve, reject) => {
 				let data = {}
 				if (token && token.refreshToken)
-					data.token = token.refreshToken
+					data.refreshToken = token.refreshToken
 				else
-					data.token = initialToken
+					data.refreshToken = initialToken
 
 				const config = {
 					method: 'post',
-					url: 'https://swelcustomers.strauss-water.com/public/token/refresh',
+					url: 'https://authentication-prod.strauss-group.com/api/v1/auth/token/refresh',
 					headers: {
-						'content-type': 'application/json'
+						// 'content-type': 'application/json', 
+						"X-Api-Key": "96787682-rrzh-0995-v9sz-cfdad9ac7072"
 					},
 					data : data
 				}
 
 				axiosRequest(config)
 					.then(response => {
-						if (response.access_token) {
+						if (response.accessToken) {
 							token = {
-								accessToken: response.access_token,
-								refreshToken: response.refresh_token,
+								accessToken: response.accessToken,
+								refreshToken: response.refreshToken,
 								expirationDate: new Date().getTime() + (1000 * response.expires_in)
 							}
 							storage.setItem('tami4-token', token)
@@ -101,7 +103,7 @@ module.exports = async function (platform) {
 			try {
 				accessToken = await getToken()
 			} catch (err) {
-				log.easyDebug(`Can't Get Token: ${err}`)
+				log.easyDebug(`Can't Get Token : ${err}`)
 				throw err
 			}
 			
