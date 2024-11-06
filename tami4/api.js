@@ -1,7 +1,7 @@
 const axiosLib = require('axios');
 let axios = axiosLib.create();
 
-let log, token, storage
+let log, token, storage 
 
 module.exports = async function (platform) {
 	let tokenPromise, statePromise, getConfigurationPromise, getDrinksPromise, getWaterQualityPromise
@@ -11,7 +11,7 @@ module.exports = async function (platform) {
 	token = await storage.getItem('tami4-token')
 
 	const getToken = () => {
-		log.easyDebug(`getToken; ${token} ${token && token.expirationDate} [currentDate = ${new Date().getTime()}`)
+		// log.easyDebug(`getToken; ${token} ${token && token.expirationDate} [currentDate = ${new Date().getTime()}`)
 		if (token && new Date().getTime() < token.expirationDate) {
 			log.easyDebug('Found valid token in cache', token.accessToken)
 			return Promise.resolve(token.accessToken)
@@ -20,7 +20,7 @@ module.exports = async function (platform) {
 		if (!tokenPromise) {
 			tokenPromise = new Promise((resolve, reject) => {
 				let data = {}
-				if (token && token.refreshToken)
+				if (token && token.refreshToken && token.newToken)
 					data.refreshToken = token.refreshToken
 				else
 					data.refreshToken = initialToken
@@ -41,6 +41,7 @@ module.exports = async function (platform) {
 							token = {
 								accessToken: response.accessToken,
 								refreshToken: response.refreshToken,
+								newToken: true,
 								expirationDate: new Date().getTime() + (1000 * response.expires_in)
 							}
 							storage.setItem('tami4-token', token)
@@ -187,7 +188,7 @@ module.exports = async function (platform) {
 					
 					const config = {
 						method: 'get',
-						url: `https://swelcustomers.strauss-water.com/api/v1/device/${deviceId}/configuration`,
+						url: `https://swelcustomers.strauss-water.com/api/v3/device/${deviceId}/configuration`,
 						headers: { 
 							'Authorization': 'Bearer ' + accessToken
 						}
@@ -254,7 +255,7 @@ module.exports = async function (platform) {
 
 			const config = {
 				method: 'post',
-				url: `https://swelcustomers.strauss-water.com/api/v1/device/${deviceId}/configuration`,
+				url: `https://swelcustomers.strauss-water.com/api/v3/device/${deviceId}/configuration`,
 				headers: { 
 					'Authorization': 'Bearer ' + accessToken,
 					'content-type': 'application/json'
