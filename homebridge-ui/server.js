@@ -7,7 +7,7 @@ class UiServer extends HomebridgePluginUiServer {
 	constructor() {
 		super();
 
-		this.endpointUrl = 'https://swelcustomers.strauss-water.com';
+		this.endpointUrl = 'https://authentication-prod.strauss-group.com';
 		// this.imei;
 
 		// create request handlers
@@ -34,11 +34,11 @@ class UiServer extends HomebridgePluginUiServer {
 
 		const data = {
 			'reCaptchaToken': captcha,
-			'phoneNumber': body.phone
+			'phone': body.phone
 		}
 
 		try {
-			const response = await axios.post(`${this.endpointUrl}/public/phone/generateOTP`, data);
+			const response = await axios.post(`${this.endpointUrl}/api/v1/auth/otp/request`, data, { headers: { "X-Api-Key": "96787682-rrzh-0995-v9sz-cfdad9ac7072"} });
 			return response.data;
 		} catch (e) {
 			console.log(e.response ? e.response.data : e.message)
@@ -61,23 +61,23 @@ class UiServer extends HomebridgePluginUiServer {
 
 		const data = {
 			'reCaptchaToken': captcha,
-			'phoneNumber': body.phone,
-			'code': body.code
+			'phone': body.phone,
+			'otp': body.code
 		}
 
 		let response;
 
 		try {
-			response = await axios.post(`${this.endpointUrl}/public/phone/submitOTP`, data);
+			response = await axios.post(`${this.endpointUrl}/api/v1/auth/otp/submit`, data, { headers: { "X-Api-Key": "96787682-rrzh-0995-v9sz-cfdad9ac7072"} });
 		} catch (e) {
 			console.log(e.response ? e.response.data : e.message)
 			throw new RequestError(e.response ? e.response.data : e.message);
 		}
     
-		if (response.data.access_token && response.data.refresh_token) {
+		if (response.data.accessToken && response.data.refreshToken) {
 			return {
-				accessToken: response.data.access_token,
-				refreshToken: response.data.refresh_token
+				accessToken: response.data.accessToken,
+				refreshToken: response.data.refreshToken
 			}
 		} else {
 			throw new RequestError(`Could NOT get the token: ${response.data}`);
