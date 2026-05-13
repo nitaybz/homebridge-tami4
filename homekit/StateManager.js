@@ -50,6 +50,23 @@ module.exports = (device, platform) => {
 						log.error(err.message || err.stack)
 					})
 
+			},
+
+			prepareDrink: (drinkId, drinkName, service) => {
+				log(`Preparing "${drinkName}" on ${device.name}`)
+				return tami4Api.prepareDrink(device.id, drinkId)
+					.then(() => Promise.resolve())
+					.catch(err => {
+						log.error(`ERROR: Preparing "${drinkName}" on ${device.name} Failed!`)
+						log.error(err.message || err.stack)
+					})
+					.finally(() => {
+						// Momentary switch — auto-reset to OFF after 2s, mirrors the Boil Water pattern.
+						setTimeout(() => {
+							if (service)
+								service.getCharacteristic(Characteristic.On).updateValue(false)
+						}, 2000)
+					})
 			}
 		}
 	}

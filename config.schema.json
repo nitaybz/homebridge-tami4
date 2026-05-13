@@ -10,7 +10,7 @@
         "properties": {
             "refreshToken": {
                 "title": "Token",
-                "description": "This value can be obtain via terminal command: `tami4-extract`",
+                "description": "Generated automatically on first run via the Homebridge plugin settings page (phone number + OTP). No CLI required.",
                 "type": "string",
                 "required": true
             },

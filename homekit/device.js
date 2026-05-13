@@ -17,6 +17,12 @@ class Tami4 {
 		this.name = device.name || 'Tami4'
 		this.displayName = this.name
 		this.id = device.id
+		this.psn = device.psn
+		this.tami4Api = platform.tami4Api
+		// mainPage contains drinks + filter/UV info, fetched in index.js. May be null on
+		// startup if the Strauss API was unreachable and there was no cached copy.
+		this.mainPage = device.mainPage || null
+		this.drinks = (this.mainPage && Array.isArray(this.mainPage.drinks)) ? this.mainPage.drinks : []
 		this.log = platform.log
 		this.api = platform.api
 		this.storage = platform.storage
@@ -85,12 +91,131 @@ class Tami4 {
 		else
 			this.removeSwitch('Push and Drink')
 
+		this.syncDrinkSwitches()
+		this.syncMaintenanceServices()
+
 
 		if (this.configurationDevice) {
 			this.stateManager.get.refreshState()
 			setInterval(this.stateManager.get.refreshState, this.statePollingInterval)
 		}
 
+		// Refresh mainPage (drinks + filter + UV) on the same polling cadence as configurations.
+		// Sensor data changes slowly, so the default 300 s interval is more than fine.
+		this.refreshMainPage = this.refreshMainPage.bind(this)
+		setInterval(this.refreshMainPage, this.statePollingInterval)
+
+	}
+
+	async refreshMainPage() {
+		if (!this.psn || !this.tami4Api) return
+		try {
+			const mainPage = await this.tami4Api.getMainPage(this.psn)
+			if (!mainPage) return
+			this.mainPage = mainPage
+			this.drinks = Array.isArray(mainPage.drinks) ? mainPage.drinks : []
+			this.syncDrinkSwitches()
+			this.syncMaintenanceServices()
+		} catch (err) {
+			this.log.easyDebug(`Failed to refresh mainPage for ${this.name}: ${err && err.message ? err.message : err}`)
+		}
+	}
+
+	syncDrinkSwitches() {
+		// Track which drink subtypes belong to the user right now so stale services from
+		// previous runs (drink renamed/deleted in the Tami4 app) get cleaned up.
+		const desiredSubtypes = new Set()
+		for (const drink of this.drinks) {
+			if (!drink || drink.id == null) continue
+			const subtype = `drink:${drink.id}`
+			desiredSubtypes.add(subtype)
+			this.addDrinkSwitch(drink, subtype)
+		}
+
+		// Remove orphaned drink services. Walk a snapshot of services since we mutate as we go.
+		for (const service of [...this.accessory.services]) {
+			if (typeof service.subtype === 'string' && service.subtype.startsWith('drink:') && !desiredSubtypes.has(service.subtype)) {
+				this.log.easyDebug(`Removing stale drink switch "${service.displayName}" (${service.subtype})`)
+				this.accessory.removeService(service)
+			}
+		}
+	}
+
+	syncMaintenanceServices() {
+		// Strauss only exposes the upcoming-replacement date and an "installed" flag, not the
+		// install date. To map this to HomeKit's FilterLifeLevel percent (0-100) we assume a
+		// 365-day filter / UV-lamp life cycle. The percent reading is approximate; the
+		// FilterChangeIndication flag flips strictly on the date and is the authoritative signal.
+		const FILTER_LIFE_DAYS = 365
+		const dynamic = this.mainPage && this.mainPage.dynamicData ? this.mainPage.dynamicData : {}
+		const filterInfo = dynamic.filterInfo
+		const uvInfo = dynamic.uvInfo
+
+		if (filterInfo && filterInfo.installed && filterInfo.upcomingReplacement)
+			this.addFilterMaintenanceService('Water Filter', 'filter', filterInfo.upcomingReplacement, FILTER_LIFE_DAYS)
+		else
+			this.removeFilterMaintenanceService('filter')
+
+		if (uvInfo && uvInfo.installed && uvInfo.upcomingReplacement)
+			this.addFilterMaintenanceService('UV Lamp', 'uv', uvInfo.upcomingReplacement, FILTER_LIFE_DAYS)
+		else
+			this.removeFilterMaintenanceService('uv')
+	}
+
+	addFilterMaintenanceService(name, subtype, upcomingReplacementMs, lifeDays) {
+		const subtypeKey = `maintenance:${subtype}`
+		let service = this.accessory.getServiceById(Service.FilterMaintenance, subtypeKey)
+		if (!service) {
+			this.log.easyDebug(`Adding "${name}" FilterMaintenance service for ${this.name}`)
+			service = this.accessory.addService(Service.FilterMaintenance, name, subtypeKey)
+		} else if (service.displayName !== name) {
+			service.displayName = name
+		}
+
+		const now = Date.now()
+		const daysRemaining = Math.round((upcomingReplacementMs - now) / 86400000)
+		const lifePercent = Math.max(0, Math.min(100, Math.round((daysRemaining / lifeDays) * 100)))
+		const needsChange = daysRemaining <= 0 ? 1 : 0
+
+		service.getCharacteristic(Characteristic.FilterChangeIndication).updateValue(needsChange)
+		service.getCharacteristic(Characteristic.FilterLifeLevel).updateValue(lifePercent)
+	}
+
+	removeFilterMaintenanceService(subtype) {
+		const subtypeKey = `maintenance:${subtype}`
+		const service = this.accessory.getServiceById(Service.FilterMaintenance, subtypeKey)
+		if (service) {
+			this.log.easyDebug(`Removing FilterMaintenance service for ${this.name} (${subtypeKey})`)
+			this.accessory.removeService(service)
+		}
+	}
+
+	addDrinkSwitch(drink, subtype) {
+		const rawName = drink.name || `Drink ${drink.id}`
+		// HomeKit rejects names with non-alphanumeric punctuation; collapse whitespace and strip
+		// anything that would otherwise cause a "characteristic was supplied illegal value" warning.
+		const safeName = String(rawName).replace(/[^\p{L}\p{N}\s'-]/gu, '').replace(/\s+/g, ' ').trim() || `Drink ${drink.id}`
+
+		this.log.easyDebug(`Adding drink switch "${safeName}" (id=${drink.id}) for ${this.name}`)
+
+		let service = this.accessory.getServiceById(Service.Switch, subtype)
+		if (!service)
+			service = this.accessory.addService(Service.Switch, safeName, subtype)
+		else if (service.displayName !== safeName) {
+			// drink renamed in the Tami4 app — push the new name through
+			service.displayName = safeName
+			const nameChar = service.getCharacteristic(Characteristic.Name)
+			if (nameChar) nameChar.updateValue(safeName)
+		}
+
+		service.getCharacteristic(Characteristic.On)
+			.onSet(state => {
+				if (state)
+					return this.stateManager.set.prepareDrink(drink.id, safeName, service)
+
+				return Promise.resolve()
+			})
+			.updateValue(false)
 	}
 
 	addBoilWaterSwitch() {

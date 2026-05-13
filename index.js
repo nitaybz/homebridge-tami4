@@ -71,6 +71,19 @@ class tami4Platform {
 				this.devices = await this.storage.getItem('tami4-devices') || []
 			}
 
+			// Fetch the mainPage payload (drinks + filter + UV) for each device once up front.
+			// Falls back to cached payload if the Strauss API is unreachable so users do not
+			// lose drink switches after a transient network hiccup.
+			await Promise.all(this.devices.map(async device => {
+				try {
+					device.mainPage = await this.tami4Api.getMainPage(device.psn)
+					await this.storage.setItem(`tami4-mainPage-${device.psn}`, device.mainPage)
+				} catch(err) {
+					this.log(`Could not fetch mainPage for ${device.name || device.psn}:`, err && err.message ? err.message : err)
+					device.mainPage = (await this.storage.getItem(`tami4-mainPage-${device.psn}`)) || null
+				}
+			}))
+
 			this.syncHomeKitCache()
 
 		})

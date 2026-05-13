@@ -4,7 +4,7 @@ let axios = axiosLib.create();
 let log, token, storage 
 
 module.exports = async function (platform) {
-	let tokenPromise, statePromise, getConfigurationPromise, getDrinksPromise, getWaterQualityPromise
+	let tokenPromise, statePromise, getConfigurationPromise
 	const initialToken = platform.refreshToken
 	log = platform.log
 	storage = platform.storage
@@ -99,44 +99,11 @@ module.exports = async function (platform) {
 
 		},
 	
-		getDrinks: async () => {
-			let accessToken
-			try {
-				accessToken = await getToken()
-			} catch (err) {
-				log.easyDebug(`Can't Get Token : ${err}`)
-				throw err
-			}
-			
-			if (!getDrinksPromise) {
-				getDrinksPromise = new Promise((resolve, reject) => {
-					
-					const config = {
-						method: 'get',
-						url: `https://swelcustomers.strauss-water.com/api/v1/customer/drink`,
-						headers: { 
-							'Authorization': 'Bearer ' + accessToken
-						}
-					};
-
-					axiosRequest(config)
-						.then(response => {
-							resolve(response)
-						})
-						.catch(error => {
-							reject(error)
-						})
-						.finally(() => {
-							getDrinksPromise = null
-						})
-
-				})
-			}
-			return getDrinksPromise
-
-		},
-	
-		getWaterQuality: async () => {
+		// HA's Tami4 integration (Guy293/Tami4EdgeAPI) uses a single mainPage call to
+		// fetch drinks, filter status, and UV-lamp status all at once. This replaces our
+		// previous split between /v1/customer/drink and /v2/customer/waterQuality.
+		// psn is the device's product serial number, returned by /v1/device.
+		getMainPage: async (psn) => {
 			let accessToken
 			try {
 				accessToken = await getToken()
@@ -144,36 +111,18 @@ module.exports = async function (platform) {
 				log.easyDebug(`Can't Get Token: ${err}`)
 				throw err
 			}
-			
-			if (!getWaterQualityPromise) {
-				getWaterQualityPromise = new Promise((resolve, reject) => {
-					
-					const config = {
-						method: 'get',
-						url: `https://swelcustomers.strauss-water.com/api/v2/customer/waterQuality`,
-						headers: { 
-							'Authorization': 'Bearer ' + accessToken
-						}
-					};
 
-					axiosRequest(config)
-						.then(response => {
-							resolve(response)
-						})
-						.catch(error => {
-							reject(error)
-						})
-						.finally(() => {
-							getDrinksPromise = null
-						})
-
-				})
+			const config = {
+				method: 'get',
+				url: `https://swelcustomers.strauss-water.com/api/v3/customer/mainPage/${psn}`,
+				headers: {
+					'Authorization': 'Bearer ' + accessToken
+				}
 			}
-			return getWaterQualityPromise
 
+			return axiosRequest(config)
 		},
-	
-	
+
 		getConfigurations: async (deviceId) => {
 			let accessToken
 			try {
