@@ -75,11 +75,18 @@ class tami4Platform {
 			// Falls back to cached payload if the Strauss API is unreachable so users do not
 			// lose drink switches after a transient network hiccup.
 			await Promise.all(this.devices.map(async device => {
+				if (!device.psn) {
+					this.log(`Cannot fetch mainPage for ${device.name || device.id || 'device'}: missing psn in /v1/device response. Drinks + filter + UV sensors will be skipped.`)
+					device.mainPage = null
+					return
+				}
 				try {
 					device.mainPage = await this.tami4Api.getMainPage(device.psn)
 					await this.storage.setItem(`tami4-mainPage-${device.psn}`, device.mainPage)
+					this.log.easyDebug(`mainPage fetched for ${device.name || device.psn}: ${JSON.stringify(device.mainPage)}`)
 				} catch(err) {
-					this.log(`Could not fetch mainPage for ${device.name || device.psn}:`, err && err.message ? err.message : err)
+					const msg = err && err.message ? err.message : err
+					this.log(`Could not fetch mainPage for ${device.name || device.psn}: ${msg}. Drinks + filter + UV sensors will be skipped (will retry on next poll).`)
 					device.mainPage = (await this.storage.getItem(`tami4-mainPage-${device.psn}`)) || null
 				}
 			}))

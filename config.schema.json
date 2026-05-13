@@ -50,6 +50,13 @@
                 "default": false,
                 "required": false
             },
+            "disableDrinks": {
+                "title": "Hide Personal Drink Switches",
+                "description": "Drinks from your Tami4 app are exposed as momentary HomeKit switches by default. Enable this to hide them (e.g. to avoid accidental taps).",
+                "type": "boolean",
+                "default": false,
+                "required": false
+            },
 			"statePollingInterval": {
 				"title": "Device Polling Interval in Seconds",
 				"description": "Time in seconds between each status polling of the Tami4 devices",

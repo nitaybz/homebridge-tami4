@@ -13,6 +13,9 @@ class Tami4 {
 		this.energySaveMode = platform.config.energySaveMode
 		this.smartHeatingMode = platform.config.smartHeatingMode
 		this.buttonsSound = platform.config.buttonsSound
+		// Drinks are exposed by default to match the HA integration; opt-out for users who
+		// do not want them as HomeKit accessories (see issue #16).
+		this.disableDrinks = !!platform.config.disableDrinks
 		this.statePollingInterval = platform.config.statePollingInterval ? platform.config.statePollingInterval * 1000 : 300000
 		this.name = device.name || 'Tami4'
 		this.displayName = this.name
@@ -91,8 +94,25 @@ class Tami4 {
 		else
 			this.removeSwitch('Push and Drink')
 
+		// Sanity log: surfaces what the device.js side received from index.js. If mainPage
+		// is null here, the Strauss API call failed and there was no cached copy, which
+		// explains why drinks and filter/UV services do not appear.
+		if (this.mainPage) {
+			const drinkCount = this.drinks.length
+			const dynamic = this.mainPage.dynamicData || {}
+			this.log.easyDebug(`mainPage loaded for ${this.name}: drinks=${drinkCount}, filterInfo=${JSON.stringify(dynamic.filterInfo)}, uvInfo=${JSON.stringify(dynamic.uvInfo)}`)
+		} else {
+			this.log(`No mainPage data for ${this.name} (drinks + filter + UV services will be skipped). Check the debug log earlier for the API error.`)
+		}
+
 		this.syncDrinkSwitches()
 		this.syncMaintenanceServices()
+
+		// Persist the modified service list to the cached-accessory file so the
+		// Homebridge UI's accessory inspector renders the new services. Without
+		// this call, services added to a cached accessory are visible to HomeKit
+		// but not always reflected in the UI until the next bridge restart.
+		this.api.updatePlatformAccessories([this.accessory])
 
 
 		if (this.configurationDevice) {
@@ -116,6 +136,7 @@ class Tami4 {
 			this.drinks = Array.isArray(mainPage.drinks) ? mainPage.drinks : []
 			this.syncDrinkSwitches()
 			this.syncMaintenanceServices()
+			this.api.updatePlatformAccessories([this.accessory])
 		} catch (err) {
 			this.log.easyDebug(`Failed to refresh mainPage for ${this.name}: ${err && err.message ? err.message : err}`)
 		}
@@ -125,11 +146,13 @@ class Tami4 {
 		// Track which drink subtypes belong to the user right now so stale services from
 		// previous runs (drink renamed/deleted in the Tami4 app) get cleaned up.
 		const desiredSubtypes = new Set()
-		for (const drink of this.drinks) {
-			if (!drink || drink.id == null) continue
-			const subtype = `drink:${drink.id}`
-			desiredSubtypes.add(subtype)
-			this.addDrinkSwitch(drink, subtype)
+		if (!this.disableDrinks) {
+			for (const drink of this.drinks) {
+				if (!drink || drink.id == null) continue
+				const subtype = `drink:${drink.id}`
+				desiredSubtypes.add(subtype)
+				this.addDrinkSwitch(drink, subtype)
+			}
 		}
 
 		// Remove orphaned drink services. Walk a snapshot of services since we mutate as we go.
@@ -146,17 +169,21 @@ class Tami4 {
 		// install date. To map this to HomeKit's FilterLifeLevel percent (0-100) we assume a
 		// 365-day filter / UV-lamp life cycle. The percent reading is approximate; the
 		// FilterChangeIndication flag flips strictly on the date and is the authoritative signal.
+		// We only need either `installed === true` OR an `upcomingReplacement` date to expose the
+		// service — some accounts return one but not the other (issue #17).
 		const FILTER_LIFE_DAYS = 365
 		const dynamic = this.mainPage && this.mainPage.dynamicData ? this.mainPage.dynamicData : {}
 		const filterInfo = dynamic.filterInfo
 		const uvInfo = dynamic.uvInfo
 
-		if (filterInfo && filterInfo.installed && filterInfo.upcomingReplacement)
+		this.log.easyDebug(`syncMaintenanceServices for ${this.name}: filterInfo=${JSON.stringify(filterInfo)} uvInfo=${JSON.stringify(uvInfo)}`)
+
+		if (filterInfo && (filterInfo.installed || filterInfo.upcomingReplacement))
 			this.addFilterMaintenanceService('Water Filter', 'filter', filterInfo.upcomingReplacement, FILTER_LIFE_DAYS)
 		else
 			this.removeFilterMaintenanceService('filter')
 
-		if (uvInfo && uvInfo.installed && uvInfo.upcomingReplacement)
+		if (uvInfo && (uvInfo.installed || uvInfo.upcomingReplacement))
 			this.addFilterMaintenanceService('UV Lamp', 'uv', uvInfo.upcomingReplacement, FILTER_LIFE_DAYS)
 		else
 			this.removeFilterMaintenanceService('uv')
@@ -166,16 +193,22 @@ class Tami4 {
 		const subtypeKey = `maintenance:${subtype}`
 		let service = this.accessory.getServiceById(Service.FilterMaintenance, subtypeKey)
 		if (!service) {
-			this.log.easyDebug(`Adding "${name}" FilterMaintenance service for ${this.name}`)
+			this.log(`Adding "${name}" FilterMaintenance service for ${this.name}`)
 			service = this.accessory.addService(Service.FilterMaintenance, name, subtypeKey)
 		} else if (service.displayName !== name) {
 			service.displayName = name
 		}
 
-		const now = Date.now()
-		const daysRemaining = Math.round((upcomingReplacementMs - now) / 86400000)
-		const lifePercent = Math.max(0, Math.min(100, Math.round((daysRemaining / lifeDays) * 100)))
-		const needsChange = daysRemaining <= 0 ? 1 : 0
+		// If upcomingReplacement is missing, treat the part as fresh: no change needed,
+		// full life. The user can rely on the in-app indicator until Strauss returns a date.
+		let needsChange = 0
+		let lifePercent = 100
+		if (upcomingReplacementMs) {
+			const now = Date.now()
+			const daysRemaining = Math.round((upcomingReplacementMs - now) / 86400000)
+			lifePercent = Math.max(0, Math.min(100, Math.round((daysRemaining / lifeDays) * 100)))
+			needsChange = daysRemaining <= 0 ? 1 : 0
+		}
 
 		service.getCharacteristic(Characteristic.FilterChangeIndication).updateValue(needsChange)
 		service.getCharacteristic(Characteristic.FilterLifeLevel).updateValue(lifePercent)
