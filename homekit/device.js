@@ -195,9 +195,8 @@ class Tami4 {
 		if (!service) {
 			this.log(`Adding "${name}" FilterMaintenance service for ${this.name}`)
 			service = this.accessory.addService(Service.FilterMaintenance, name, subtypeKey)
-		} else if (service.displayName !== name) {
-			service.displayName = name
 		}
+		this._setServiceName(service, name)
 
 		// If upcomingReplacement is missing, treat the part as fresh: no change needed,
 		// full life. The user can rely on the in-app indicator until Strauss returns a date.
@@ -223,6 +222,22 @@ class Tami4 {
 		}
 	}
 
+	// Set the service-level name explicitly. Without this, HomeKit clients and the
+	// Homebridge UI tend to fall back to the accessory display name ("Tami 4") for
+	// every service tile, which makes the multiple drinks + filter + UV indistinguishable.
+	// Setting both Name (legacy) and ConfiguredName (HomeKit R2) covers older and newer
+	// clients.
+	_setServiceName(service, name) {
+		service.displayName = name
+		if (service.testCharacteristic && service.testCharacteristic(Characteristic.Name))
+			service.getCharacteristic(Characteristic.Name).updateValue(name)
+		if (Characteristic.ConfiguredName) {
+			if (!service.testCharacteristic(Characteristic.ConfiguredName))
+				service.addOptionalCharacteristic(Characteristic.ConfiguredName)
+			service.getCharacteristic(Characteristic.ConfiguredName).updateValue(name)
+		}
+	}
+
 	addDrinkSwitch(drink, subtype) {
 		const rawName = drink.name || `Drink ${drink.id}`
 		// HomeKit rejects names with non-alphanumeric punctuation; collapse whitespace and strip
@@ -234,12 +249,8 @@ class Tami4 {
 		let service = this.accessory.getServiceById(Service.Switch, subtype)
 		if (!service)
 			service = this.accessory.addService(Service.Switch, safeName, subtype)
-		else if (service.displayName !== safeName) {
-			// drink renamed in the Tami4 app — push the new name through
-			service.displayName = safeName
-			const nameChar = service.getCharacteristic(Characteristic.Name)
-			if (nameChar) nameChar.updateValue(safeName)
-		}
+
+		this._setServiceName(service, safeName)
 
 		service.getCharacteristic(Characteristic.On)
 			.onSet(state => {
@@ -256,6 +267,8 @@ class Tami4 {
 		this.boilWaterService = this.accessory.getService('Boil Water')
 		if (!this.boilWaterService)
 			this.boilWaterService = this.accessory.addService(Service.Switch, 'Boil Water', 'Boil Water' + this.name)
+
+		this._setServiceName(this.boilWaterService, 'Boil Water')
 
 		this.boilWaterService.getCharacteristic(Characteristic.On)
 			.onSet(state => {
@@ -276,6 +289,8 @@ class Tami4 {
 		this[serviceName] = this.accessory.getService(name)
 		if (!this[serviceName])
 			this[serviceName] = this.accessory.addService(Service.Switch, name, name + this.name)
+
+		this._setServiceName(this[serviceName], name)
 
 		this[serviceName].getCharacteristic(Characteristic.On)
 			.onSet(state => {
