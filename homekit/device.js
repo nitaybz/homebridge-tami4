@@ -201,10 +201,13 @@ class Tami4 {
 
 	addMaintenanceBatteryService(name, subtype, upcomingReplacementMs, lifeDays) {
 		const subtypeKey = `battery:${subtype}`
-		let service = this.accessory.getServiceById(Service.BatteryService, subtypeKey)
+		// HAP-NodeJS v2 dropped the legacy `Service.BatteryService` alias and only exposes
+		// `Service.Battery`. Fall back gracefully if either name is present.
+		const BatteryServiceCtor = Service.Battery || Service.BatteryService
+		let service = this.accessory.getServiceById(BatteryServiceCtor, subtypeKey)
 		if (!service) {
 			this.log(`Adding "${name}" Battery service for ${this.name}`)
-			service = this.accessory.addService(Service.BatteryService, name, subtypeKey)
+			service = this.accessory.addService(BatteryServiceCtor, name, subtypeKey)
 		}
 		this._setServiceName(service, name)
 
@@ -226,7 +229,8 @@ class Tami4 {
 
 	removeMaintenanceBatteryService(subtype) {
 		const subtypeKey = `battery:${subtype}`
-		const service = this.accessory.getServiceById(Service.BatteryService, subtypeKey)
+		const BatteryServiceCtor = Service.Battery || Service.BatteryService
+		const service = this.accessory.getServiceById(BatteryServiceCtor, subtypeKey)
 		if (service) {
 			this.log.easyDebug(`Removing Battery service for ${this.name} (${subtypeKey})`)
 			this.accessory.removeService(service)
