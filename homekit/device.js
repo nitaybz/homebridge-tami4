@@ -165,60 +165,80 @@ class Tami4 {
 	}
 
 	syncMaintenanceServices() {
-		// Strauss only exposes the upcoming-replacement date and an "installed" flag, not the
-		// install date. To map this to HomeKit's FilterLifeLevel percent (0-100) we assume a
-		// 365-day filter / UV-lamp life cycle. The percent reading is approximate; the
-		// FilterChangeIndication flag flips strictly on the date and is the authoritative signal.
-		// We only need either `installed === true` OR an `upcomingReplacement` date to expose the
-		// service — some accounts return one but not the other (issue #17).
-		const FILTER_LIFE_DAYS = 365
+		// Strauss reports the upcoming-replacement date and an "installed" flag, plus filter
+		// litres-passed. We surface filter and UV state as HomeKit Battery services because
+		// Battery is the only HAP primitive that pairs a 0-100% level with a binary "needs
+		// attention" flag without forcing the accessory category into Air Purifier / HVAC.
+		//   BatteryLevel    = clamp(daysRemaining / lifeDays * 100)
+		//   StatusLowBattery = 1 if daysRemaining <= 0 else 0 (date-driven, authoritative)
+		//   ChargingState   = 2 (NotChargeable) — these consumables are replaced, not charged
+		//
+		// Life baselines from Strauss product spec:
+		//   filter = 182 days (six months)
+		//   UV lamp = 365 days (one year)
+		const FILTER_LIFE_DAYS = 182
+		const UV_LIFE_DAYS = 365
 		const dynamic = this.mainPage && this.mainPage.dynamicData ? this.mainPage.dynamicData : {}
 		const filterInfo = dynamic.filterInfo
 		const uvInfo = dynamic.uvInfo
 
 		this.log.easyDebug(`syncMaintenanceServices for ${this.name}: filterInfo=${JSON.stringify(filterInfo)} uvInfo=${JSON.stringify(uvInfo)}`)
 
+		// v1.4.0-1.4.2 used Service.FilterMaintenance which is not valid on a Switch-class
+		// accessory. Clean up any leftover services from those releases on first boot.
+		this._removeLegacyFilterMaintenanceServices()
+
 		if (filterInfo && (filterInfo.installed || filterInfo.upcomingReplacement))
-			this.addFilterMaintenanceService('Water Filter', 'filter', filterInfo.upcomingReplacement, FILTER_LIFE_DAYS)
+			this.addMaintenanceBatteryService('Water Filter', 'filter', filterInfo.upcomingReplacement, FILTER_LIFE_DAYS)
 		else
-			this.removeFilterMaintenanceService('filter')
+			this.removeMaintenanceBatteryService('filter')
 
 		if (uvInfo && (uvInfo.installed || uvInfo.upcomingReplacement))
-			this.addFilterMaintenanceService('UV Lamp', 'uv', uvInfo.upcomingReplacement, FILTER_LIFE_DAYS)
+			this.addMaintenanceBatteryService('UV Lamp', 'uv', uvInfo.upcomingReplacement, UV_LIFE_DAYS)
 		else
-			this.removeFilterMaintenanceService('uv')
+			this.removeMaintenanceBatteryService('uv')
 	}
 
-	addFilterMaintenanceService(name, subtype, upcomingReplacementMs, lifeDays) {
-		const subtypeKey = `maintenance:${subtype}`
-		let service = this.accessory.getServiceById(Service.FilterMaintenance, subtypeKey)
+	addMaintenanceBatteryService(name, subtype, upcomingReplacementMs, lifeDays) {
+		const subtypeKey = `battery:${subtype}`
+		let service = this.accessory.getServiceById(Service.BatteryService, subtypeKey)
 		if (!service) {
-			this.log(`Adding "${name}" FilterMaintenance service for ${this.name}`)
-			service = this.accessory.addService(Service.FilterMaintenance, name, subtypeKey)
+			this.log(`Adding "${name}" Battery service for ${this.name}`)
+			service = this.accessory.addService(Service.BatteryService, name, subtypeKey)
 		}
 		this._setServiceName(service, name)
 
-		// If upcomingReplacement is missing, treat the part as fresh: no change needed,
-		// full life. The user can rely on the in-app indicator until Strauss returns a date.
-		let needsChange = 0
+		// If upcomingReplacement is missing, treat the part as fresh: full life, no warning.
 		let lifePercent = 100
+		let lowBattery = 0
 		if (upcomingReplacementMs) {
 			const now = Date.now()
 			const daysRemaining = Math.round((upcomingReplacementMs - now) / 86400000)
 			lifePercent = Math.max(0, Math.min(100, Math.round((daysRemaining / lifeDays) * 100)))
-			needsChange = daysRemaining <= 0 ? 1 : 0
+			lowBattery = daysRemaining <= 0 ? 1 : 0
 		}
 
-		service.getCharacteristic(Characteristic.FilterChangeIndication).updateValue(needsChange)
-		service.getCharacteristic(Characteristic.FilterLifeLevel).updateValue(lifePercent)
+		service.getCharacteristic(Characteristic.BatteryLevel).updateValue(lifePercent)
+		service.getCharacteristic(Characteristic.StatusLowBattery).updateValue(lowBattery)
+		// 2 = NotChargeable. Filters and UV lamps are replaced, not charged.
+		service.getCharacteristic(Characteristic.ChargingState).updateValue(2)
 	}
 
-	removeFilterMaintenanceService(subtype) {
-		const subtypeKey = `maintenance:${subtype}`
-		const service = this.accessory.getServiceById(Service.FilterMaintenance, subtypeKey)
+	removeMaintenanceBatteryService(subtype) {
+		const subtypeKey = `battery:${subtype}`
+		const service = this.accessory.getServiceById(Service.BatteryService, subtypeKey)
 		if (service) {
-			this.log.easyDebug(`Removing FilterMaintenance service for ${this.name} (${subtypeKey})`)
+			this.log.easyDebug(`Removing Battery service for ${this.name} (${subtypeKey})`)
 			this.accessory.removeService(service)
+		}
+	}
+
+	_removeLegacyFilterMaintenanceServices() {
+		for (const service of [...this.accessory.services]) {
+			if (typeof service.subtype === 'string' && service.subtype.startsWith('maintenance:')) {
+				this.log(`Removing legacy FilterMaintenance service "${service.displayName}" (${service.subtype}) from ${this.name}`)
+				this.accessory.removeService(service)
+			}
 		}
 	}
 
